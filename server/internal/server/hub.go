@@ -1,0 +1,97 @@
+package server
+
+import (
+	"log"
+	"net/http"
+
+	"github.com/guruorgoru/go-mmo/server/internal/objects"
+	"github.com/guruorgoru/go-mmo/server/pkg/packets"
+)
+
+type ClientInterfacer interface {
+	// Gives the ID of the Client
+	GetId() uint64
+
+	// Initialize a new clients by giving it id ans shi's
+	Initialize(id uint64)
+
+	// Processes the packet sent by the Client
+	ProcessMessage(senderId uint64, message packets.Msg)
+
+	// Forwards message to all other clients via Hub
+	BroadcastMessage(message packets.Msg)
+
+	// Forwards message to another client via Hub
+	PassToPeer(message packets.Msg, senderId uint64)
+
+	// Reads messages from Client
+	ReadPump()
+
+	// Writes messages to Client
+	WritePump()
+
+	// Puts message from this client to write pump
+	SendMessage(message packets.Msg)
+
+	// Puts message from another client to write pump
+	SendMessageAs(message packets.Msg, senderId uint64)
+
+	// Closes the client connection
+	Close(reason string)
+}
+
+// All connected clients will be managed by the Hub
+type Hub struct {
+	Clients *objects.SharedCollection[ClientInterfacer]
+
+	// Packets in this channel will be broadcasted to all Clients
+	BoradcastChan chan *packets.Packet
+
+	// Clients in this channel will be registered to the Hub
+	RegisterChan chan ClientInterfacer
+
+	// Clients in this channel will be unregistered from the Hub
+	UnregisterChan chan ClientInterfacer
+}
+
+func NewHub() *Hub {
+	return &Hub{
+		Clients:        objects.NewSharedCollection[ClientInterfacer](0),
+		BoradcastChan:  make(chan *packets.Packet),
+		RegisterChan:   make(chan ClientInterfacer),
+		UnregisterChan: make(chan ClientInterfacer),
+	}
+}
+
+func (h *Hub) Run() {
+	log.Println("Hub is listening...")
+
+	for {
+		select {
+		case client := <-h.RegisterChan:
+			client.Initialize(h.Clients.Add(client))
+			log.Printf("Client %v registered", client.GetId())
+		case client := <-h.UnregisterChan:
+			h.Clients.Delete(client.GetId())
+		case packet := <-h.BoradcastChan:
+			h.Clients.ForEach(func(id uint64, client ClientInterfacer) {
+				if id != packet.SenderId {
+					client.ProcessMessage(packet.SenderId, packet.Msg)
+				}
+			})
+		}
+	}
+}
+
+func (h *Hub) Serve(getNewClient func(*Hub, http.ResponseWriter, *http.Request) (ClientInterfacer, error), w http.ResponseWriter, r *http.Request) {
+	client, err := getNewClient(h, w, r)
+	if err != nil {
+		log.Println("Error while getting new client:", err)
+		return
+	}
+
+	h.RegisterChan <- client
+
+	go client.WritePump()
+	go client.ReadPump()
+}

@@ -1,0 +1,13 @@
+[gd_scene load_steps=2 format=3 uid="uid://drjblvdi2oos2"]
+
+[ext_resource type="Script" uid="uid://c8bxtyf0f5gc0" path="res://classes/logs/log.gd" id="1_iqj5m"]
+
+[node name="Log" type="RichTextLabel"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+bbcode_enabled = true
+scroll_following = true
+script = ExtResource("1_iqj5m")
