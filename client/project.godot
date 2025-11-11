@@ -19,6 +19,7 @@ config/icon="res://icon.svg"
 [autoload]
 
 WS="*res://ws_client.gd"
+GameManager="*res://game_manager.gd"
 
 [display]
 
@@ -26,7 +27,7 @@ display_server/driver.linuxbsd="wayland"
 
 [editor_plugins]
 
-enabled=PackedStringArray("res://addons/protobuf/plugin.cfg")
+enabled=PackedStringArray("res://addons/protobuf/plugin.cfg", "res://addons/wakatime/plugin.cfg")
 
 [rendering]
 

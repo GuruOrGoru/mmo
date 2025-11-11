@@ -6,7 +6,7 @@ import (
 	"net/http"
 
 	"github.com/guruorgoru/go-mmo/server/internal/server"
-	"github.com/guruorgoru/go-mmo/server/internal/server/clients"
+	"github.com/guruorgoru/go-mmo/server/internal/clients"
 )
 
 func main() {

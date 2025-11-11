@@ -7,6 +7,7 @@ import (
 
 	"github.com/gorilla/websocket"
 	"github.com/guruorgoru/go-mmo/server/internal/server"
+	"github.com/guruorgoru/go-mmo/server/internal/server/states"
 	"github.com/guruorgoru/go-mmo/server/pkg/packets"
 	"google.golang.org/protobuf/proto"
 )
@@ -16,6 +17,7 @@ type WebSocketClient struct {
 	conn     *websocket.Conn
 	hub      *server.Hub
 	sendChan chan *packets.Packet
+	state    server.State
 	logger   *log.Logger
 }
 
@@ -50,23 +52,39 @@ func (c *WebSocketClient) GetId() uint64 {
 func (c *WebSocketClient) Initialize(id uint64) {
 	c.id = id
 	c.logger.SetPrefix(fmt.Sprintf("Client %v", c.id))
-	c.SendMessage(packets.NewId(c.id))
-	c.logger.Println("Sent Id to client")
+	c.SetState(&states.Connected{})
 }
 
 func (c *WebSocketClient) ProcessMessage(senderId uint64, msg packets.Msg) {
-	if senderId == c.id {
-		c.BroadcastMessage(msg)
-	} else {
-		c.SendMessageAs(msg, senderId)
+	c.state.Handle(senderId, msg)
+}
+
+func (c *WebSocketClient) SetState(state server.State) {
+	previousStateName := "None"
+	if c.state != nil {
+		previousStateName = c.state.Name()
+		c.state.OnExit()
+	}
+
+	newStateName := "None"
+	if state != nil {
+		newStateName = state.Name()
+	}
+
+	c.logger.Printf("Changing client state from %v to %v \n", previousStateName, newStateName)
+	c.state = state
+
+	if c.state != nil {
+		c.state.SetClient(c)
+		c.state.OnEntry()
 	}
 }
 
-func (c *WebSocketClient) SendMessage(message packets.Msg) {
-	c.SendMessageAs(message, c.id)
+func (c *WebSocketClient) Send(message packets.Msg) {
+	c.SendAs(message, c.id)
 }
 
-func (c *WebSocketClient) SendMessageAs(message packets.Msg, senderId uint64) {
+func (c *WebSocketClient) SendAs(message packets.Msg, senderId uint64) {
 	select {
 	case c.sendChan <- &packets.Packet{SenderId: senderId, Msg: message}:
 	default:
@@ -74,17 +92,17 @@ func (c *WebSocketClient) SendMessageAs(message packets.Msg, senderId uint64) {
 	}
 }
 
-func (c *WebSocketClient) PassToPeer(msg packets.Msg, peerId uint64) {
+func (c *WebSocketClient) SendTo(msg packets.Msg, peerId uint64) {
 	if peer, exists := c.hub.Clients.GetObjById(peerId); exists {
 		peer.ProcessMessage(c.id, msg)
 	}
 }
 
-func (c *WebSocketClient) BroadcastMessage(msg packets.Msg) {
+func (c *WebSocketClient) Broadcast(msg packets.Msg) {
 	c.hub.BoradcastChan <- &packets.Packet{SenderId: c.id, Msg: msg}
 }
 
-func (c *WebSocketClient) ReadPump() {
+func (c *WebSocketClient) ReadLoop() {
 	defer func() {
 		c.logger.Println("Closing read pump")
 		c.Close("read pump closed")
@@ -115,7 +133,7 @@ func (c *WebSocketClient) ReadPump() {
 	}
 }
 
-func (c *WebSocketClient) WritePump() {
+func (c *WebSocketClient) WriteLoop() {
 	defer func() {
 		c.logger.Println("Closing write pump")
 		c.Close("write pump closed")
@@ -157,6 +175,7 @@ func (c *WebSocketClient) WritePump() {
 func (c *WebSocketClient) Close(reason string) {
 	c.logger.Printf("Closing client connection because: %s", reason)
 
+	c.SetState(nil)
 	c.hub.UnregisterChan <- c
 	err := c.conn.Close()
 	if err != nil {

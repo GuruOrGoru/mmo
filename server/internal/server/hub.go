@@ -8,6 +8,20 @@ import (
 	"github.com/guruorgoru/go-mmo/server/pkg/packets"
 )
 
+type State interface {
+	Name() string
+
+	// DI the client into state handler
+	SetClient(client ClientInterfacer)
+
+	// On Entry and handling their reqs
+	OnEntry()
+	Handle(senderId uint64, msg packets.Msg)
+
+	// Cleanup
+	OnExit()
+}
+
 type ClientInterfacer interface {
 	// Gives the ID of the Client
 	GetId() uint64
@@ -19,22 +33,25 @@ type ClientInterfacer interface {
 	ProcessMessage(senderId uint64, message packets.Msg)
 
 	// Forwards message to all other clients via Hub
-	BroadcastMessage(message packets.Msg)
+	Broadcast(message packets.Msg)
+
+	// Set and change the state of client. Eg: from login to lobby, etc
+	SetState(newState State)
 
 	// Forwards message to another client via Hub
-	PassToPeer(message packets.Msg, senderId uint64)
+	SendTo(message packets.Msg, senderId uint64)
 
 	// Reads messages from Client
-	ReadPump()
+	ReadLoop()
 
 	// Writes messages to Client
-	WritePump()
+	WriteLoop()
 
 	// Puts message from this client to write pump
-	SendMessage(message packets.Msg)
+	Send(message packets.Msg)
 
 	// Puts message from another client to write pump
-	SendMessageAs(message packets.Msg, senderId uint64)
+	SendAs(message packets.Msg, senderId uint64)
 
 	// Closes the client connection
 	Close(reason string)
@@ -92,6 +109,6 @@ func (h *Hub) Serve(getNewClient func(*Hub, http.ResponseWriter, *http.Request) 
 
 	h.RegisterChan <- client
 
-	go client.WritePump()
-	go client.ReadPump()
+	go client.WriteLoop()
+	go client.ReadLoop()
 }
