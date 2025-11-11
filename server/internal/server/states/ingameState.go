@@ -47,6 +47,8 @@ func (ig *InGame) Handle(senderId uint64, msg packets.Msg) {
 		ig.handlePlayer(senderId, msg)
 	case *packets.Packet_PlayerDirection:
 		ig.handlePlayerDirection(senderId, msg)
+	case *packets.Packet_ChatMsg:
+		ig.handleChatMessage(senderId, msg)
 	}
 }
 
@@ -59,6 +61,14 @@ func (ig *InGame) handlePlayerDirection(senderId uint64, msg *packets.Packet_Pla
 			ig.cancelPlayerUpdateLoop = cancel
 			go ig.updatePlayerLoop(ctx)
 		}
+	}
+}
+
+func (ig *InGame) handleChatMessage(senderId uint64, msg packets.Msg) {
+	if senderId == ig.client.GetId() {
+		ig.client.Broadcast(msg)
+	} else {
+		ig.client.SendAs(msg, senderId)
 	}
 }
 
