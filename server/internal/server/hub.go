@@ -1,12 +1,20 @@
 package server
 
 import (
+	"context"
+	"database/sql"
+	_ "embed"
 	"log"
 	"net/http"
 
 	"github.com/guruorgoru/go-mmo/server/internal/objects"
+	"github.com/guruorgoru/go-mmo/server/internal/server/db"
 	"github.com/guruorgoru/go-mmo/server/pkg/packets"
+	_ "github.com/jackc/pgx/v5/stdlib"
 )
+
+//go:embed db/config/schema.sql
+var schemaGenSql string
 
 type State interface {
 	Name() string
@@ -20,6 +28,10 @@ type State interface {
 
 	// Cleanup
 	OnExit()
+}
+
+type SharedGameObjects struct {
+	Players *objects.SharedCollection[*objects.Player]
 }
 
 type ClientInterfacer interface {
@@ -47,6 +59,9 @@ type ClientInterfacer interface {
 	// Writes messages to Client
 	WriteLoop()
 
+	DbTx() *DbTx
+	SharedGameObjects() *SharedGameObjects
+
 	// Puts message from this client to write pump
 	Send(message packets.Msg)
 
@@ -69,18 +84,46 @@ type Hub struct {
 
 	// Clients in this channel will be unregistered from the Hub
 	UnregisterChan chan ClientInterfacer
+
+	dbPool *sql.DB
+
+	SharedGameObjects *SharedGameObjects
+}
+
+type DbTx struct {
+	Ctx     context.Context
+	Queries *db.Queries
+}
+
+func (h *Hub) NewDbTx() *DbTx {
+	return &DbTx{
+		Ctx: context.Background(),
+		Queries: db.New(h.dbPool),
+	}
 }
 
 func NewHub() *Hub {
+	dbPool, err := sql.Open("pgx", "postgres://guruorgoru:balakotalu77@localhost:5432/mmo")
+	if err != nil {
+		log.Fatal(err)
+	}
 	return &Hub{
 		Clients:        objects.NewSharedCollection[ClientInterfacer](0),
 		BoradcastChan:  make(chan *packets.Packet),
 		RegisterChan:   make(chan ClientInterfacer),
 		UnregisterChan: make(chan ClientInterfacer),
+		dbPool:         dbPool,
+		SharedGameObjects: &SharedGameObjects{
+			Players: objects.NewSharedCollection[*objects.Player](0),
+		},
 	}
 }
 
 func (h *Hub) Run() {
+	log.Println("Initializing database...")
+	if _, err := h.dbPool.ExecContext(context.Background(), schemaGenSql); err != nil {
+		log.Fatalln("Error initializing database", err)
+	}
 	log.Println("Hub is listening...")
 
 	for {

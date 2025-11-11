@@ -18,6 +18,7 @@ type WebSocketClient struct {
 	hub      *server.Hub
 	sendChan chan *packets.Packet
 	state    server.State
+	dbtx     *server.DbTx
 	logger   *log.Logger
 }
 
@@ -37,10 +38,15 @@ func NewWebSocketClient(h *server.Hub, w http.ResponseWriter, r *http.Request) (
 		hub:      h,
 		conn:     conn,
 		sendChan: make(chan *packets.Packet, 256),
+		dbtx:     h.NewDbTx(),
 		logger:   log.New(log.Writer(), "Client unknown: ", log.LstdFlags),
 	}
 
 	return client, nil
+}
+
+func (c *WebSocketClient) DbTx() *server.DbTx {
+	return c.dbtx
 }
 
 // Interface methods for client <start>
@@ -82,6 +88,10 @@ func (c *WebSocketClient) SetState(state server.State) {
 
 func (c *WebSocketClient) Send(message packets.Msg) {
 	c.SendAs(message, c.id)
+}
+
+func (c *WebSocketClient) SharedGameObjects() *server.SharedGameObjects {
+	return c.hub.SharedGameObjects
 }
 
 func (c *WebSocketClient) SendAs(message packets.Msg, senderId uint64) {

@@ -1,9 +1,11 @@
 package packets
 
+import "github.com/guruorgoru/go-mmo/server/internal/objects"
+
 type Msg = isPacket_Msg
 
 func NewChat(msg string) Msg {
-	return  &Packet_ChatMsg{
+	return &Packet_ChatMsg{
 		ChatMsg: &ChatMessage{
 			Msg: msg,
 		},
@@ -14,6 +16,34 @@ func NewId(id uint64) Msg {
 	return &Packet_IdMsg{
 		IdMsg: &IdMessage{
 			Id: id,
+		},
+	}
+}
+
+func NewOkMessage() Msg {
+	return &Packet_OkResponse{
+		OkResponse: &OkResponseMessage{},
+	}
+}
+
+func NewDenyMessage(reason string) Msg {
+	return &Packet_DenyResponse{
+		DenyResponse: &DenyResponseMessage{
+			Reason: reason,
+		},
+	}
+}
+
+func NewPlayer(id uint64, player *objects.Player) Msg {
+	return &Packet_Player{
+		Player: &PlayerMessage{
+			Id:        id,
+			Name:      player.Name,
+			X:         player.X,
+			Y:         player.Y,
+			Radius:    player.Radius,
+			Direction: player.Direction,
+			Speed:     player.Speed,
 		},
 	}
 }
