@@ -50,11 +50,29 @@ func NewPlayer(id uint64, player *objects.Player) Msg {
 
 func NewSpore(id uint64, spore *objects.Spore) Msg {
 	return &Packet_Spore{
-		Spore: &SporeMessage{
-			Id: id,
-			X: spore.X,
-			Y: spore.Y,
-			Radius: spore.Radius,
+		Spore: newSporeMessage(id, spore),
+	}
+}
+
+func NewSporeBatch(spores map[uint64]*objects.Spore) Msg {
+	sporeMessages := make([]*SporeMessage, 0, len(spores))
+
+	for id, obj := range spores {
+		sporeMessages = append(sporeMessages, newSporeMessage(id, obj))
+	}
+
+	return &Packet_SporeBatch{
+		SporeBatch: &SporesBatchMessage{
+			Spores: sporeMessages,
 		},
+	}
+}
+
+func newSporeMessage(id uint64, spore *objects.Spore) *SporeMessage {
+	return &SporeMessage{
+		Id:     id,
+		X:      spore.X,
+		Y:      spore.Y,
+		Radius: spore.Radius,
 	}
 }

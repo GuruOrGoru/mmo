@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	_ "embed"
 	"log"
+	"math/rand/v2"
 	"net/http"
 
 	"github.com/guruorgoru/go-mmo/server/internal/objects"
@@ -32,6 +33,7 @@ type State interface {
 
 type SharedGameObjects struct {
 	Players *objects.SharedCollection[*objects.Player]
+	Spores  *objects.SharedCollection[*objects.Spore]
 }
 
 type ClientInterfacer interface {
@@ -97,7 +99,7 @@ type DbTx struct {
 
 func (h *Hub) NewDbTx() *DbTx {
 	return &DbTx{
-		Ctx: context.Background(),
+		Ctx:     context.Background(),
 		Queries: db.New(h.dbPool),
 	}
 }
@@ -115,6 +117,7 @@ func NewHub() *Hub {
 		dbPool:         dbPool,
 		SharedGameObjects: &SharedGameObjects{
 			Players: objects.NewSharedCollection[*objects.Player](0),
+			Spores: objects.NewSharedCollection[*objects.Spore](0),
 		},
 	}
 }
@@ -124,6 +127,12 @@ func (h *Hub) Run() {
 	if _, err := h.dbPool.ExecContext(context.Background(), schemaGenSql); err != nil {
 		log.Fatalln("Error initializing database", err)
 	}
+
+	log.Println("Spawning spores...")
+	for range objects.SpawnLimit {
+		h.SharedGameObjects.Spores.Add(h.newSpores())
+	}
+
 	log.Println("Hub is listening...")
 
 	for {
@@ -154,4 +163,14 @@ func (h *Hub) Serve(getNewClient func(*Hub, http.ResponseWriter, *http.Request) 
 
 	go client.WriteLoop()
 	go client.ReadLoop()
+}
+
+func (h *Hub) newSpores() *objects.Spore {
+	radius := max(rand.NormFloat64()*3+15, 7)
+	x, y := objects.SpawnCoords(radius, h.SharedGameObjects.Players, h.SharedGameObjects.Spores)
+	return &objects.Spore{
+		Radius: radius,
+		X: x,
+		Y: y,
+	}
 }

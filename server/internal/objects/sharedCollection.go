@@ -5,7 +5,7 @@ import "maps"
 import "sync"
 
 type SharedCollection[T any] struct {
-	objectsMap map[uint64]T // Mimicing database
+	objectsMap map[uint64]T
 	nextId uint64 // If for the next client
 	mapMux sync.Mutex // To make it block when one client is accessing a method
 }
