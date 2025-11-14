@@ -60,8 +60,14 @@ func (c *Connected) Handle(senderId uint64, msg packets.Msg) {
 
 	case *packets.Packet_RegisterRequest:
 		c.handleRegisterRequest(senderId, msg)
+	case *packets.Packet_HiscoreBoardRequest:
+		c.handleHighscoreBoardRequest(senderId, msg)
 
 	}
+}
+
+func (c *Connected) handleHighscoreBoardRequest(senderId uint64, msg *packets.Packet_HiscoreBoardRequest) {
+	c.client.SetState(&BrowsingHighscores{})
 }
 
 func (c *Connected) handleLoginRequest(senderId uint64, msg *packets.Packet_LoginRequest) {
@@ -88,11 +94,20 @@ func (c *Connected) handleLoginRequest(senderId uint64, msg *packets.Packet_Logi
 		c.client.Send(generalFailedMessage)
 		return
 	}
+
+	player, err := c.queries.GetPlayerById(c.dbCtx, user.ID)
+	if err != nil {
+		c.logger.Printf("Error fetching player for the user %v: %v", user.ID, err)
+		c.client.Send(generalFailedMessage)
+		return
+	}
 	c.logger.Printf("user %v logged in succesfully", username)
 	c.client.Send(packets.NewOkMessage())
 	c.client.SetState(&InGame{
 		player: &objects.Player{
-			Name: username,
+			Name: player.Name,
+			DbId: int64(player.ID),
+			HighScore: int64(player.BestScore),
 		},
 	})
 }
@@ -128,12 +143,22 @@ func (c *Connected) handleRegisterRequest(senderId uint64, msg *packets.Packet_R
 		return
 	}
 
-	_, err = c.queries.CreateUser(c.dbCtx, db.CreateUserParams{
+	user, err := c.queries.CreateUser(c.dbCtx, db.CreateUserParams{
 		Username: username,
 		PasswordHash: string(hashedPassword),
 	})
 	if err != nil {
 		c.logger.Printf("Error creating user %v: %v", username, err)
+		c.client.Send(genericFailMessage)
+		return
+	}
+
+	_, err = c.queries.CreatePlayer(c.dbCtx, db.CreatePlayerParams{
+		Name: msg.RegisterRequest.Username,
+		UserID: user.ID,
+	})
+	if err != nil {
+		c.logger.Printf("Error creating the player %v from the user %v", username, err)
 		c.client.Send(genericFailMessage)
 		return
 	}

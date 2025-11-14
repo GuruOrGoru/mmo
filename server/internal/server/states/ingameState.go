@@ -5,11 +5,11 @@ import (
 	"fmt"
 	"log"
 	"math"
-	"math/rand/v2"
 	"time"
 
 	"github.com/guruorgoru/go-mmo/server/internal/objects"
 	"github.com/guruorgoru/go-mmo/server/internal/server"
+	"github.com/guruorgoru/go-mmo/server/internal/server/db"
 	"github.com/guruorgoru/go-mmo/server/pkg/packets"
 )
 
@@ -33,8 +33,8 @@ func (ig *InGame) SetClient(client server.ClientInterfacer) {
 func (ig *InGame) OnEntry() {
 	ig.logger.Printf("Adding %v to the sharedGameObject", ig.player.Name)
 	ig.player.Radius = 20.0
-	ig.player.X, ig.player.Y = objects.SpawnCoords(ig.player.Radius, ig.client.SharedGameObjects().Players, nil)
 	ig.player.Speed = 150.0
+	ig.player.X, ig.player.Y = objects.SpawnCoords(ig.player.Radius, ig.client.SharedGameObjects().Players, nil)
 
 	go ig.client.SharedGameObjects().Players.Add(ig.player, ig.client.GetId())
 	ig.client.Send(packets.NewPlayer(ig.client.GetId(), ig.player))
@@ -56,7 +56,13 @@ func (ig *InGame) Handle(senderId uint64, msg packets.Msg) {
 		ig.handleSporeConsumedMessage(senderId, msg)
 	case *packets.Packet_PlayerConsumed:
 		ig.handlePlayerConsumedMessage(senderId, msg)
+	case *packets.Packet_Spore:
+		ig.handleSporeMessage(senderId, msg)
 	}
+}
+
+func (ig *InGame) handleSporeMessage(senderId uint64, msg *packets.Packet_Spore) {
+	ig.client.SendAs(msg, senderId)
 }
 
 func (ig *InGame) handlePlayerDirection(senderId uint64, msg *packets.Packet_PlayerDirection) {
@@ -106,6 +112,7 @@ func (ig *InGame) OnExit() {
 	if ig.cancelPlayerUpdateLoop != nil {
 		ig.cancelPlayerUpdateLoop()
 	}
+	ig.syncPlayerBestScore()
 	ig.client.SharedGameObjects().Players.Delete(ig.client.GetId())
 }
 
@@ -119,6 +126,31 @@ func (ig *InGame) syncPlayer(delta float64) {
 	updatePacket := packets.NewPlayer(ig.client.GetId(), ig.player)
 	ig.client.Broadcast(updatePacket)
 	go ig.client.Send(updatePacket)
+
+	if ig.player.Radius > 15 {
+		ig.player.SporeCooldown -= delta
+		if ig.player.SporeCooldown <= 0 {
+			ig.player.SporeCooldown = 0.5 + (50 / ig.player.Radius)
+			r := min(5+ig.player.Radius/50, 15)
+			spore := &objects.Spore{
+				X:         ig.player.X,
+				Y:         ig.player.Y,
+				Radius:    r,
+				Dropper:   ig.player,
+				DroppedAt: time.Now(),
+			}
+			id := ig.client.SharedGameObjects().Spores.Add(spore)
+			packet := packets.NewSpore(id, spore)
+
+			ig.client.Broadcast(packet)
+			go ig.client.Send(packet)
+
+			sporeMass := radiusToMass(r)
+			oldPlayerMass := radiusToMass(ig.player.Radius)
+			newPlayerMass := oldPlayerMass - sporeMass
+			ig.player.Radius = massToRadius(newPlayerMass)
+		}
+	}
 }
 
 func (ig *InGame) spawnInitialSpores(batchSize int, batchDelay time.Duration) {
@@ -159,7 +191,7 @@ func (ig *InGame) validatePlayerIsCloseToSpore(objX, objY, objRadius, buffer flo
 
 	tresholdDistance := ig.player.Radius + objRadius + buffer
 	tresholdDistanceSquared := tresholdDistance * tresholdDistance
-	
+
 	if distanceSquared > tresholdDistanceSquared {
 		return fmt.Errorf("player lied again, he is too far from the object. (distance: %f, treshold: %f >> Both in squared formj)", distanceSquared, tresholdDistanceSquared)
 	}
@@ -174,7 +206,7 @@ func radiusToMass(radius float64) float64 {
 }
 
 func massToRadius(mass float64) float64 {
-	radiusSquared := mass/math.Pi
+	radiusSquared := mass / math.Pi
 	return math.Sqrt(radiusSquared)
 }
 
@@ -200,6 +232,12 @@ func (ig *InGame) handleSporeConsumedMessage(senderId uint64, msg *packets.Packe
 		return
 	}
 
+	err = ig.validatePlayerSporeDropCooldown(spore, 10)
+	if err != nil {
+		ig.logger.Println(genericError, err)
+		return
+	}
+
 	// everything's good, increase the player
 	sporeMass := radiusToMass(spore.Radius)
 	oldPlayerMass := radiusToMass(ig.player.Radius)
@@ -208,6 +246,7 @@ func (ig *InGame) handleSporeConsumedMessage(senderId uint64, msg *packets.Packe
 	ig.player.Radius = massToRadius(newPlayerMass)
 
 	go ig.client.SharedGameObjects().Spores.Delete(msg.SporeConsumed.SporeId)
+	go ig.syncPlayerBestScore()
 	ig.client.Broadcast(msg)
 }
 
@@ -236,7 +275,7 @@ func (ig *InGame) handlePlayerConsumedMessage(senderId uint64, msg *packets.Pack
 
 	ourMass := radiusToMass(ig.player.Radius)
 	otherMass := radiusToMass(otherPlayer.Radius)
-	if ourMass <= otherMass*1.2{
+	if ourMass <= otherMass*1.2 {
 		ig.logger.Println(genericError, "you arent big enough to consume this player")
 		return
 	}
@@ -250,7 +289,17 @@ func (ig *InGame) handlePlayerConsumedMessage(senderId uint64, msg *packets.Pack
 	ig.player.Radius = massToRadius(ourNewMass)
 
 	go ig.client.SharedGameObjects().Players.Delete(msg.PlayerConsumed.PlayerId)
+	ig.syncPlayerBestScore()
 	ig.client.Broadcast(msg)
+}
+
+func (ig *InGame) validatePlayerSporeDropCooldown(spore *objects.Spore, buff float64) error {
+	minAcceptableDistance := spore.Radius + ig.player.Radius - buff
+	minAcceptableTime := time.Duration(minAcceptableDistance/ig.player.Speed*1000) * time.Millisecond
+	if spore.Dropper == ig.player && time.Since(spore.DroppedAt) < minAcceptableTime {
+		return fmt.Errorf("player dropped the spore too recently (time since drop: %v, min acceptable time: %v)", time.Since(spore.DroppedAt), minAcceptableTime)
+	}
+	return nil
 }
 
 func (ig *InGame) getOtherPlayer(otherId uint64) (*objects.Player, error) {
@@ -259,4 +308,18 @@ func (ig *InGame) getOtherPlayer(otherId uint64) (*objects.Player, error) {
 		return nil, fmt.Errorf("player with %v id doesnt exists, you are lying", otherId)
 	}
 	return other, nil
+}
+
+func (ig *InGame) syncPlayerBestScore() {
+	currentScore := math.Round(radiusToMass(ig.player.Radius))
+	if currentScore > float64(ig.player.HighScore) {
+		ig.player.HighScore = int64(currentScore)
+		err := ig.client.DbTx().Queries.UpdatePlayerHighScore(ig.client.DbTx().Ctx, db.UpdatePlayerHighScoreParams{
+			ID:        int32(ig.player.DbId),
+			BestScore: int32(ig.player.HighScore),
+		})
+		if err != nil {
+			ig.logger.Println("Error updating highscores: ", err)
+		}
+	}
 }

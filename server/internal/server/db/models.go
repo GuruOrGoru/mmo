@@ -4,6 +4,13 @@
 
 package db
 
+type Player struct {
+	ID        int32
+	UserID    int32
+	Name      string
+	BestScore int32
+}
+
 type User struct {
 	ID           int32
 	Username     string

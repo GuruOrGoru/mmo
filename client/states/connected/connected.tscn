@@ -41,6 +41,10 @@ text = "Login"
 layout_mode = 2
 text = "Register"
 
+[node name="HighScore" type="Button" parent="UI/VBoxContainer/HBoxContainer"]
+layout_mode = 2
+text = "Highscores"
+
 [node name="Log" type="RichTextLabel" parent="UI/VBoxContainer"]
 custom_minimum_size = Vector2(0, 400)
 layout_mode = 2

@@ -16,7 +16,8 @@ var velocity: Vector2
 var radius: float:
 	set(new_radius):
 		radius = new_radius
-		_collision_shape.set_radius(radius)
+		if _collision_shape:
+			_collision_shape.set_radius(radius)
 		queue_redraw()
 		
 @onready var _nameplate: Label = $Nameplate

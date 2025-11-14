@@ -4,9 +4,11 @@ const packets := preload("res://packets.gd")
 const Actor := preload("res://objects/actors/actor.gd")
 const Spore := preload("res://objects/spores/spore.gd")
 
-@onready var _log: Log = $UI/Log
-@onready var _line_edit: LineEdit = $UI/LineEdit
+@onready var _log: Log = $UI/VBoxContainer/Log
+@onready var _line_edit: LineEdit = $UI/VBoxContainer/LineEdit
+@onready var _highscore: Highscores = $UI/HighScoresBox/Highscore
 @onready var _world: Node2D = $World
+@onready var _coords: Label = $UI/coords
 var _players: Dictionary[int, Actor]
 var _spores: Dictionary[int, Spore]
 
@@ -14,7 +16,11 @@ func _ready() -> void:
 	WS.connection_closed.connect(_on_ws_connection_closed)
 	WS.packet_received.connect(_on_ws_packet_received)
 	_line_edit.text_submitted.connect(_on_line_edit_text_submitted)	
-	
+
+func _process(delta: float) -> void:
+	if GameManager.client_id in _players:
+		var player = _players[GameManager.client_id]
+		_coords.text = "x: %.1f, y: %.1f" % [player.position.x, player.position.y]
 func _on_ws_connection_closed() -> void:
 	_log.warning("Connection closed")
 
@@ -55,6 +61,7 @@ func _handle_player_msg(sender_id: int, player_msg: packets.PlayerMessage) -> vo
 
 func _add_actor(actor_id: int, actor_name: String, x: float, y: float, radius: float, speed: float, is_player: bool) -> void:
 	var actor := Actor.instantiate(actor_id, actor_name, x, y, radius, speed, is_player)
+	_set_actor_mass(actor, _rad_to_mass(radius))
 	_world.add_child(actor)
 	_players[actor_id] = actor
 	
@@ -63,7 +70,7 @@ func _add_actor(actor_id: int, actor_name: String, x: float, y: float, radius: f
 
 func _update_actor(actor_id: int, x: float, y: float, direction: float, speed: float, radius: float, is_player: bool) -> void:
 	var actor := _players[actor_id]
-	actor.radius = radius
+	_set_actor_mass(actor, _rad_to_mass(radius))
 
 	if actor.position.distance_squared_to(Vector2(x, y)) > 100:
 		actor.position.x = x
@@ -100,6 +107,8 @@ func _consume_player(actor: Actor) -> void:
 
 func _consume_spore(spore: Spore) -> void:
 	var player = _players[GameManager.client_id]
+	if spore.underneathPlayer:
+		return
 	var player_mass := _rad_to_mass(player.radius)
 	var spore_mass := _rad_to_mass(spore.radius)
 	_set_actor_mass(player, player_mass + spore_mass)
@@ -115,6 +124,7 @@ func _remove_spore(spore: Spore) -> void:
 
 func _remove_actor(actor: Actor) -> void:
 	_players.erase(actor.actor_id)
+	_highscore.remove_highscore(actor.actor_name)
 	actor.queue_free()
 
 func _on_line_edit_text_submitted(text: String) -> void:
@@ -134,9 +144,16 @@ func _handle_spore_msg(sender_id: int, spore_msg: packets.SporeMessage) -> void:
 	var x := spore_msg.get_x()
 	var y := spore_msg.get_y()
 	var radius := spore_msg.get_radius()
+	var underneathPlayer := false
+
+	if GameManager.client_id in _players:
+		var player := _players[GameManager.client_id]
+		var player_pos := Vector2(player.position.x, player.position.y)
+		var spore_pos := Vector2(x, y)
+		underneathPlayer = player_pos.distance_squared_to(spore_pos) < player.radius * player.radius
 
 	if spore_id not in _spores:
-		var spore := Spore.instantiate(spore_id, x, y, radius)
+		var spore := Spore.instantiate(spore_id, x, y, radius, underneathPlayer)
 		_world.add_child(spore)
 		_spores[spore_id] = spore
 func _handle_spore_batch(sender_id: int, spore_batch_msg: packets.SporesBatchMessage) -> void:
@@ -159,3 +176,4 @@ func _rad_to_mass(radius: float) -> float:
 	return radius * radius * PI
 func _set_actor_mass(actor: Actor, new_mass: float) -> void:
 	actor.radius = sqrt(new_mass / PI)
+	_highscore.set_highscore(actor.actor_name, new_mass)

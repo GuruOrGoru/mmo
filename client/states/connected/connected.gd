@@ -9,12 +9,14 @@ var _action_on_ok_received: Callable
 @onready var _login_button: Button = $UI/VBoxContainer/HBoxContainer/LoginButton
 @onready var _register_button: Button = $UI/VBoxContainer/HBoxContainer/RegisterButton
 @onready var _log: Log = $UI/VBoxContainer/Log
+@onready var _high_score: Button = $UI/VBoxContainer/HBoxContainer/HighScore
 
 func _ready() -> void:
 	WS.packet_received.connect(_on_ws_packet_received)
 	WS.connection_closed.connect(_on_ws_connection_closed)
 	_login_button.pressed.connect(_on_login_button_pressed)
 	_register_button.pressed.connect(_on_register_button_pressed)
+	_high_score.pressed.connect(_on_highscore_button_pressed)
 
 func _on_ws_packet_received(packet: packets.Packet) -> void:
 	var sender_id := packet.get_sender_id()
@@ -27,6 +29,8 @@ func _on_ws_packet_received(packet: packets.Packet) -> void:
 func _on_ws_connection_closed() -> void:
 	pass
 	
+func _on_highscore_button_pressed() -> void:
+	GameManager.set_state(GameManager.State.BROWSINGHIGHSCORES)
 func _on_login_button_pressed() -> void:
 	var packet := packets.Packet.new()
 	var login_request_message := packet.new_login_request()

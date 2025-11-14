@@ -1,6 +1,8 @@
 package packets
 
-import "github.com/guruorgoru/go-mmo/server/internal/objects"
+import (
+	"github.com/guruorgoru/go-mmo/server/internal/objects"
+)
 
 type Msg = isPacket_Msg
 
@@ -74,5 +76,13 @@ func newSporeMessage(id uint64, spore *objects.Spore) *SporeMessage {
 		X:      spore.X,
 		Y:      spore.Y,
 		Radius: spore.Radius,
+	}
+}
+
+func NewHighScoreBoard(highScores []*HiscoreMessage) Msg {
+	return &Packet_HiscoreBoard{
+		HiscoreBoard: &HiscoreBoardMessage{
+			Hiscores: highScores,
+		},
 	}
 }

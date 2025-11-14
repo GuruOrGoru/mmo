@@ -7,6 +7,7 @@ import (
 	"log"
 	"math/rand/v2"
 	"net/http"
+	"time"
 
 	"github.com/guruorgoru/go-mmo/server/internal/objects"
 	"github.com/guruorgoru/go-mmo/server/internal/server/db"
@@ -133,6 +134,8 @@ func (h *Hub) Run() {
 		h.SharedGameObjects.Spores.Add(h.newSpores())
 	}
 
+	go h.respawnSpores(1*time.Second)
+
 	log.Println("Hub is listening...")
 
 	for {
@@ -172,5 +175,31 @@ func (h *Hub) newSpores() *objects.Spore {
 		Radius: radius,
 		X: x,
 		Y: y,
+	}
+}
+
+func (h *Hub) respawnSpores(rate time.Duration) {
+	ticker := time.NewTicker(rate)
+	defer ticker.Stop()
+
+	for range ticker.C {
+		reamainingSpores := h.SharedGameObjects.Spores.ApproxLen()
+		approxDifference := objects.SpawnLimit - reamainingSpores
+
+		if approxDifference <= 0 {
+			continue
+		}
+
+		for i := 0; i < min(approxDifference, 13); i++ {
+			spore := h.newSpores()
+			sporeId := h.SharedGameObjects.Spores.Add(spore)
+
+			h.BoradcastChan <- &packets.Packet{
+				SenderId: 0,
+				Msg: packets.NewSpore(sporeId, spore),
+			}
+
+			time.Sleep(40*time.Millisecond)
+		}
 	}
 }
