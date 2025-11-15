@@ -86,8 +86,9 @@ func _physics_process(delta) -> void:
 	var mouse_pos := get_global_mouse_position()
 
 	var input_vec = position.direction_to(mouse_pos).normalized()
-	if abs(velocity.angle_to(input_vec)) > TAU / 15: # 24 degrees
-		velocity = input_vec * speed
+	var target_velocity = input_vec * speed
+	velocity = velocity.lerp(target_velocity, 5.0 * delta)
+	if velocity.length_squared() > 0.01:  # Only send if moving
 		var packet := packets.Packet.new()
 		var player_direction_message := packet.new_player_direction()
 		player_direction_message.set_direction(velocity.angle())

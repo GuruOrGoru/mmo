@@ -8,7 +8,7 @@ func _ready() -> void:
 	WS.connection_closed.connect(_on_ws_connection_closed)
 	WS.packet_received.connect(_on_ws_packet_received)
 	_log.info("Connecting to server...")
-	WS.connect_to_url("ws://127.0.0.1:8414/ws")
+	WS.connect_to_url("wss://mmo-l27r.onrender.com/ws")
 
 func _on_ws_connected_to_server() -> void:
 	_log.success("Connected Succesfully!")
