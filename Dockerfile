@@ -18,6 +18,7 @@ RUN go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
 
 # Generate protobuf Go code
 RUN protoc --go_out=. --go_opt=paths=source_relative shared/packets.proto
+RUN mv shared/packets.pb.go server/pkg/packets/
 
 # Install sqlc
 RUN go install github.com/sqlc-dev/sqlc/cmd/sqlc@latest
