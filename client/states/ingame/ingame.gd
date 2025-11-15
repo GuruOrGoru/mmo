@@ -100,7 +100,7 @@ func _update_actor(actor_id: int, x: float, y: float, direction: float, speed: f
 	var actor := _players[actor_id]
 	_set_actor_mass(actor, _rad_to_mass(radius))
 
-	if actor.position.distance_squared_to(Vector2(x, y)) > 100:
+	if is_player or actor.position.distance_squared_to(Vector2(x, y)) > 100:
 		actor.server_position.x = x
 		actor.server_position.y = y
 	

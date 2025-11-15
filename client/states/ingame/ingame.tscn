@@ -78,7 +78,7 @@ layout_mode = 2
 
 [node name="LogoutButton" type="Button" parent="UI/MarginContainer/VBoxContainer/HBoxContainer"]
 layout_mode = 2
-text = "⎋"
+text = "Back"
 
 [node name="LineEdit" type="LineEdit" parent="UI/MarginContainer/VBoxContainer/HBoxContainer"]
 custom_minimum_size = Vector2(50, 1)
@@ -89,4 +89,5 @@ placeholder_text = "Type some message..."
 
 [node name="SendButton" type="Button" parent="UI/MarginContainer/VBoxContainer/HBoxContainer"]
 layout_mode = 2
-text = "➤"
+text = "Send"
+expand_icon = true

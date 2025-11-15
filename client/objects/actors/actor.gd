@@ -77,7 +77,7 @@ func _input(event):
 func _physics_process(delta) -> void:
 	position += velocity * delta
 	server_position += velocity * delta
-	position += (server_position - position)*0.4
+	position += (server_position - position)*0.1
 
 	if not is_player:
 		return
@@ -87,7 +87,7 @@ func _physics_process(delta) -> void:
 
 	var input_vec = position.direction_to(mouse_pos).normalized()
 	var target_velocity = input_vec * speed
-	velocity = velocity.lerp(target_velocity, 5.0 * delta)
+	velocity = velocity.lerp(target_velocity, 10.0 * delta)
 	if velocity.length_squared() > 0.01:  # Only send if moving
 		var packet := packets.Packet.new()
 		var player_direction_message := packet.new_player_direction()
