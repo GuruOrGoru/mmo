@@ -5,13 +5,13 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/guruorgoru/go-mmo/server/internal/server"
 	"github.com/guruorgoru/go-mmo/server/internal/clients"
+	"github.com/guruorgoru/go-mmo/server/internal/server"
 )
 
 func main() {
-	port := "8414"
-	hub := server.NewHub()
+	config := server.LoadConfig()
+	hub := server.NewHub(config)
 
 	http.HandleFunc("/ws", func(w http.ResponseWriter, r *http.Request) {
 		hub.Serve(clients.NewWebSocketClient, w, r)
@@ -19,9 +19,9 @@ func main() {
 
 	go hub.Run()
 
-	addr := fmt.Sprintf(":%v", port)
+	addr := fmt.Sprintf(":%v", config.Port)
 
-	log.Println("Server starting at port:", port)
+	log.Println("Server starting at port:", config.Port)
 
 	log.Fatal(http.ListenAndServe(addr, nil))
 }

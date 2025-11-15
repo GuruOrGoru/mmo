@@ -5,6 +5,7 @@ go 1.25.3
 require (
 	github.com/gorilla/websocket v1.5.3
 	github.com/jackc/pgx/v5 v5.7.6
+	github.com/joho/godotenv v1.5.1
 	golang.org/x/crypto v0.43.0
 	google.golang.org/protobuf v1.36.10
 )

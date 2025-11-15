@@ -105,8 +105,8 @@ func (h *Hub) NewDbTx() *DbTx {
 	}
 }
 
-func NewHub() *Hub {
-	dbPool, err := sql.Open("pgx", "postgres://guruorgoru:balakotalu77@localhost:5432/mmo")
+func NewHub(config *Config) *Hub {
+	dbPool, err := sql.Open("pgx", config.DBURL)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -118,7 +118,7 @@ func NewHub() *Hub {
 		dbPool:         dbPool,
 		SharedGameObjects: &SharedGameObjects{
 			Players: objects.NewSharedCollection[*objects.Player](0),
-			Spores: objects.NewSharedCollection[*objects.Spore](0),
+			Spores:  objects.NewSharedCollection[*objects.Spore](0),
 		},
 	}
 }
@@ -134,7 +134,7 @@ func (h *Hub) Run() {
 		h.SharedGameObjects.Spores.Add(h.newSpores())
 	}
 
-	go h.respawnSpores(1*time.Second)
+	go h.respawnSpores(1 * time.Second)
 
 	log.Println("Hub is listening...")
 
@@ -173,8 +173,8 @@ func (h *Hub) newSpores() *objects.Spore {
 	x, y := objects.SpawnCoords(radius, h.SharedGameObjects.Players, h.SharedGameObjects.Spores)
 	return &objects.Spore{
 		Radius: radius,
-		X: x,
-		Y: y,
+		X:      x,
+		Y:      y,
 	}
 }
 
@@ -196,10 +196,10 @@ func (h *Hub) respawnSpores(rate time.Duration) {
 
 			h.BoradcastChan <- &packets.Packet{
 				SenderId: 0,
-				Msg: packets.NewSpore(sporeId, spore),
+				Msg:      packets.NewSpore(sporeId, spore),
 			}
 
-			time.Sleep(40*time.Millisecond)
+			time.Sleep(40 * time.Millisecond)
 		}
 	}
 }
