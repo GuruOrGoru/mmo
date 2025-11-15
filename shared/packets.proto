@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package packets;
 
-option go_package = "packets";
+option go_package = "github.com/guruorgoru/go-mmo/server/pkg/packets";
 
 message ChatMessage {
   string msg = 1;
