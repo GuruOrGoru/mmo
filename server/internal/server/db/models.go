@@ -9,6 +9,7 @@ type Player struct {
 	UserID    int32
 	Name      string
 	BestScore int32
+	Color     int32
 }
 
 type User struct {

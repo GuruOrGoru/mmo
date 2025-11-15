@@ -4,18 +4,35 @@ const packets := preload("res://packets.gd")
 const Actor := preload("res://objects/actors/actor.gd")
 const Spore := preload("res://objects/spores/spore.gd")
 
-@onready var _log: Log = $UI/VBoxContainer/Log
-@onready var _line_edit: LineEdit = $UI/VBoxContainer/LineEdit
+@onready var _log: Log = $UI/MarginContainer/VBoxContainer/Log
+@onready var _line_edit: LineEdit = $UI/MarginContainer/VBoxContainer/HBoxContainer/LineEdit
 @onready var _highscore: Highscores = $UI/HighScoresBox/Highscore
+@onready var _send_button: Button = $UI/MarginContainer/VBoxContainer/HBoxContainer/SendButton
+@onready var _logout_button: Button = $UI/MarginContainer/VBoxContainer/HBoxContainer/LogoutButton
 @onready var _world: Node2D = $World
 @onready var _coords: Label = $UI/coords
 var _players: Dictionary[int, Actor]
 var _spores: Dictionary[int, Spore]
+var _target_zoom := 2
+var _furthest_zoom_allowed := _target_zoom
 
 func _ready() -> void:
 	WS.connection_closed.connect(_on_ws_connection_closed)
 	WS.packet_received.connect(_on_ws_packet_received)
+	_send_button.pressed.connect(_on_send_button_pressed)
+	_logout_button.pressed.connect(_on_logout_button_pressed)
 	_line_edit.text_submitted.connect(_on_line_edit_text_submitted)	
+
+func _on_logout_button_pressed() -> void:
+	var packet := packets.Packet.new()
+	var disMsg := packet.new_disconnect()
+	disMsg.set_reason("they logged out")
+	WS.send(packet)
+	
+	GameManager.set_state(GameManager.State.CONNECTED)
+
+func _on_send_button_pressed() -> void:
+	_on_line_edit_text_submitted(_line_edit.text)
 
 func _process(delta: float) -> void:
 	if GameManager.client_id in _players:
@@ -36,8 +53,16 @@ func _on_ws_packet_received(packet: packets.Packet) -> void:
 		_handle_spore_batch(sender_id, packet.get_spore_batch())
 	elif packet.has_spore_consumed():
 		_handle_spore_consumed(sender_id, packet.get_spore_consumed())
+	elif  packet.has_disconnect():
+		_handle_disconnect_msg(sender_id, packet.get_disconnect())
 
-
+func _handle_disconnect_msg(sender_id: int, msg: packets.DisconnectMessage) -> void:
+	if sender_id in _players:
+		var player := _players[sender_id]
+		var reason := msg.get_reason()
+		_log.info("%s disconnected because %s" % [player.actor_name, reason])
+		_remove_actor(player)
+	
 func _handle_chat_msg(sender_id: int, chat_msg: packets.ChatMessage) -> void:
 	if sender_id in _players:
 		var actor := _players[sender_id]
@@ -50,19 +75,22 @@ func _handle_player_msg(sender_id: int, player_msg: packets.PlayerMessage) -> vo
 	var y := player_msg.get_y()
 	var radius := player_msg.get_radius()
 	var speed := player_msg.get_speed()
+	var color_msg := player_msg.get_color()
+	var color := Color.hex(color_msg)
 
 	var is_player := actor_id == GameManager.client_id
 
 	if actor_id not in _players:
-		_add_actor(actor_id, actor_name, x, y, radius, speed, is_player)
+		_add_actor(actor_id, actor_name, x, y, radius, speed, is_player, color)
 	else:
 		var direction := player_msg.get_direction()
 		_update_actor(actor_id, x, y, direction, speed, radius, is_player)
 
-func _add_actor(actor_id: int, actor_name: String, x: float, y: float, radius: float, speed: float, is_player: bool) -> void:
-	var actor := Actor.instantiate(actor_id, actor_name, x, y, radius, speed, is_player)
+func _add_actor(actor_id: int, actor_name: String, x: float, y: float, radius: float, speed: float, is_player: bool, color: Color) -> void:
+	var actor := Actor.instantiate(actor_id, actor_name, x, y, radius, speed, is_player, color)
 	_set_actor_mass(actor, _rad_to_mass(radius))
 	_world.add_child(actor)
+	actor.z_index = 1
 	_players[actor_id] = actor
 	
 	if is_player:
@@ -73,8 +101,8 @@ func _update_actor(actor_id: int, x: float, y: float, direction: float, speed: f
 	_set_actor_mass(actor, _rad_to_mass(radius))
 
 	if actor.position.distance_squared_to(Vector2(x, y)) > 100:
-		actor.position.x = x
-		actor.position.y = y
+		actor.server_position.x = x
+		actor.server_position.y = y
 	
 	if not is_player:
 		actor.velocity = Vector2.from_angle(direction) * speed

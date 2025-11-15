@@ -1,0 +1,68 @@
+[gd_scene load_steps=3 format=3 uid="uid://8ucy037at365"]
+
+[ext_resource type="Script" uid="uid://bmae2u1ibrq15" path="res://classes/register_form/register_form.gd" id="1_1f7y0"]
+[ext_resource type="Theme" uid="uid://cw81u3138i7hr" path="res://resources/game_theme.tres" id="2_bkcsx"]
+
+[node name="RegisterForm" type="VBoxContainer"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_1f7y0")
+
+[node name="Username" type="LineEdit" parent="."]
+layout_mode = 2
+placeholder_text = "Username"
+max_length = 20
+
+[node name="Password" type="LineEdit" parent="."]
+layout_mode = 2
+placeholder_text = "Password"
+virtual_keyboard_type = 6
+secret = true
+secret_character = "*"
+
+[node name="ComfirmPassw" type="LineEdit" parent="."]
+layout_mode = 2
+placeholder_text = "Comfirm the password"
+virtual_keyboard_type = 6
+secret = true
+secret_character = "*"
+
+[node name="RichTextLabel" type="RichTextLabel" parent="."]
+layout_mode = 2
+theme = ExtResource("2_bkcsx")
+theme_override_font_sizes/bold_font_size = 24
+bbcode_enabled = true
+text = "[center][color=#FF6B6B]Y[/color][color=#FF8C42]o[/color][color=#FFD93D]u[/color][color=#6BCB77]r[/color][color=#4ECDC4] [/color][color=#4D96FF]P[/color][color=#9D84B7]l[/color][color=#FF85C0]a[/color][color=#FFB6C1]y[/color][color=#87CEEB]e[/color][color=#DDA0DD]r[/color][color=#F0E68C] [/color][color=#FF6B6B]c[/color][color=#4ECDC4]o[/color][color=#6BCB77]l[/color][color=#FFD93D]o[/color][color=#4D96FF]r[/color][/center]"
+fit_content = true
+autowrap_mode = 2
+
+[node name="ColorPicker" type="ColorPicker" parent="."]
+layout_mode = 2
+size_flags_horizontal = 4
+size_flags_vertical = 4
+edit_alpha = false
+edit_intensity = false
+picker_shape = 1
+sampler_visible = false
+color_modes_visible = false
+sliders_visible = false
+hex_visible = false
+presets_visible = false
+
+[node name="HBoxContainer" type="HBoxContainer" parent="."]
+layout_mode = 2
+size_flags_horizontal = 4
+size_flags_vertical = 4
+
+[node name="RegisterButton" type="Button" parent="HBoxContainer"]
+layout_mode = 2
+text = "Register
+"
+
+[node name="Cancel" type="Button" parent="HBoxContainer"]
+layout_mode = 2
+text = "Cancel
+"

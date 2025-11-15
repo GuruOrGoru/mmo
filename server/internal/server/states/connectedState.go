@@ -108,6 +108,7 @@ func (c *Connected) handleLoginRequest(senderId uint64, msg *packets.Packet_Logi
 			Name: player.Name,
 			DbId: int64(player.ID),
 			HighScore: int64(player.BestScore),
+			Color: player.Color,
 		},
 	})
 }
@@ -156,6 +157,7 @@ func (c *Connected) handleRegisterRequest(senderId uint64, msg *packets.Packet_R
 	_, err = c.queries.CreatePlayer(c.dbCtx, db.CreatePlayerParams{
 		Name: msg.RegisterRequest.Username,
 		UserID: user.ID,
+		Color: msg.RegisterRequest.Color,
 	})
 	if err != nil {
 		c.logger.Printf("Error creating the player %v from the user %v", username, err)

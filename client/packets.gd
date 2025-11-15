@@ -853,6 +853,11 @@ class RegisterRequestMessage:
 		service.field = __password
 		data[__password.tag] = service
 		
+		__color = PBField.new("color", PB_DATA_TYPE.INT32, PB_RULE.OPTIONAL, 3, true, DEFAULT_VALUES_3[PB_DATA_TYPE.INT32])
+		service = PBServiceField.new()
+		service.field = __color
+		data[__color.tag] = service
+		
 	var data = {}
 	
 	var __username: PBField
@@ -880,6 +885,19 @@ class RegisterRequestMessage:
 		__password.value = DEFAULT_VALUES_3[PB_DATA_TYPE.STRING]
 	func set_password(value : String) -> void:
 		__password.value = value
+	
+	var __color: PBField
+	func has_color() -> bool:
+		if __color.value != null:
+			return true
+		return false
+	func get_color() -> int:
+		return __color.value
+	func clear_color() -> void:
+		data[3].state = PB_SERVICE_STATE.UNFILLED
+		__color.value = DEFAULT_VALUES_3[PB_DATA_TYPE.INT32]
+	func set_color(value : int) -> void:
+		__color.value = value
 	
 	func _to_string() -> String:
 		return PBPacker.message_to_string(data)
@@ -1013,6 +1031,11 @@ class PlayerMessage:
 		service.field = __speed
 		data[__speed.tag] = service
 		
+		__color = PBField.new("color", PB_DATA_TYPE.INT32, PB_RULE.OPTIONAL, 8, true, DEFAULT_VALUES_3[PB_DATA_TYPE.INT32])
+		service = PBServiceField.new()
+		service.field = __color
+		data[__color.tag] = service
+		
 	var data = {}
 	
 	var __id: PBField
@@ -1105,6 +1128,19 @@ class PlayerMessage:
 		__speed.value = DEFAULT_VALUES_3[PB_DATA_TYPE.DOUBLE]
 	func set_speed(value : float) -> void:
 		__speed.value = value
+	
+	var __color: PBField
+	func has_color() -> bool:
+		if __color.value != null:
+			return true
+		return false
+	func get_color() -> int:
+		return __color.value
+	func clear_color() -> void:
+		data[8].state = PB_SERVICE_STATE.UNFILLED
+		__color.value = DEFAULT_VALUES_3[PB_DATA_TYPE.INT32]
+	func set_color(value : int) -> void:
+		__color.value = value
 	
 	func _to_string() -> String:
 		return PBPacker.message_to_string(data)
@@ -1631,6 +1667,51 @@ class SearchHighscoreMessage:
 			return PB_ERR.PARSE_INCOMPLETE
 		return result
 	
+class DisconnectMessage:
+	func _init():
+		var service
+		
+		__reason = PBField.new("reason", PB_DATA_TYPE.STRING, PB_RULE.OPTIONAL, 1, true, DEFAULT_VALUES_3[PB_DATA_TYPE.STRING])
+		service = PBServiceField.new()
+		service.field = __reason
+		data[__reason.tag] = service
+		
+	var data = {}
+	
+	var __reason: PBField
+	func has_reason() -> bool:
+		if __reason.value != null:
+			return true
+		return false
+	func get_reason() -> String:
+		return __reason.value
+	func clear_reason() -> void:
+		data[1].state = PB_SERVICE_STATE.UNFILLED
+		__reason.value = DEFAULT_VALUES_3[PB_DATA_TYPE.STRING]
+	func set_reason(value : String) -> void:
+		__reason.value = value
+	
+	func _to_string() -> String:
+		return PBPacker.message_to_string(data)
+		
+	func to_bytes() -> PackedByteArray:
+		return PBPacker.pack_message(data)
+		
+	func from_bytes(bytes : PackedByteArray, offset : int = 0, limit : int = -1) -> int:
+		var cur_limit = bytes.size()
+		if limit != -1:
+			cur_limit = limit
+		var result = PBPacker.unpack_message(data, bytes, offset, cur_limit)
+		if result == cur_limit:
+			if PBPacker.check_required(data):
+				if limit == -1:
+					return PB_ERR.NO_ERRORS
+			else:
+				return PB_ERR.REQUIRED_FIELDS
+		elif limit == -1 && result > 0:
+			return PB_ERR.PARSE_INCOMPLETE
+		return result
+	
 class Packet:
 	func _init():
 		var service
@@ -1742,6 +1823,12 @@ class Packet:
 		service.func_ref = Callable(self, "new_search_highscore")
 		data[__search_highscore.tag] = service
 		
+		__disconnect = PBField.new("disconnect", PB_DATA_TYPE.MESSAGE, PB_RULE.OPTIONAL, 19, true, DEFAULT_VALUES_3[PB_DATA_TYPE.MESSAGE])
+		service = PBServiceField.new()
+		service.field = __disconnect
+		service.func_ref = Callable(self, "new_disconnect")
+		data[__disconnect.tag] = service
+		
 	var data = {}
 	
 	var __sender_id: PBField
@@ -1801,6 +1888,8 @@ class Packet:
 		data[17].state = PB_SERVICE_STATE.UNFILLED
 		__search_highscore.value = DEFAULT_VALUES_3[PB_DATA_TYPE.MESSAGE]
 		data[18].state = PB_SERVICE_STATE.UNFILLED
+		__disconnect.value = DEFAULT_VALUES_3[PB_DATA_TYPE.MESSAGE]
+		data[19].state = PB_SERVICE_STATE.UNFILLED
 		__chat_msg.value = ChatMessage.new()
 		return __chat_msg.value
 	
@@ -1848,6 +1937,8 @@ class Packet:
 		data[17].state = PB_SERVICE_STATE.UNFILLED
 		__search_highscore.value = DEFAULT_VALUES_3[PB_DATA_TYPE.MESSAGE]
 		data[18].state = PB_SERVICE_STATE.UNFILLED
+		__disconnect.value = DEFAULT_VALUES_3[PB_DATA_TYPE.MESSAGE]
+		data[19].state = PB_SERVICE_STATE.UNFILLED
 		__id_msg.value = IdMessage.new()
 		return __id_msg.value
 	
@@ -1895,6 +1986,8 @@ class Packet:
 		data[17].state = PB_SERVICE_STATE.UNFILLED
 		__search_highscore.value = DEFAULT_VALUES_3[PB_DATA_TYPE.MESSAGE]
 		data[18].state = PB_SERVICE_STATE.UNFILLED
+		__disconnect.value = DEFAULT_VALUES_3[PB_DATA_TYPE.MESSAGE]
+		data[19].state = PB_SERVICE_STATE.UNFILLED
 		__login_request.value = LoginRequestMessage.new()
 		return __login_request.value
 	
@@ -1942,6 +2035,8 @@ class Packet:
 		data[17].state = PB_SERVICE_STATE.UNFILLED
 		__search_highscore.value = DEFAULT_VALUES_3[PB_DATA_TYPE.MESSAGE]
 		data[18].state = PB_SERVICE_STATE.UNFILLED
+		__disconnect.value = DEFAULT_VALUES_3[PB_DATA_TYPE.MESSAGE]
+		data[19].state = PB_SERVICE_STATE.UNFILLED
 		__register_request.value = RegisterRequestMessage.new()
 		return __register_request.value
 	
@@ -1989,6 +2084,8 @@ class Packet:
 		data[17].state = PB_SERVICE_STATE.UNFILLED
 		__search_highscore.value = DEFAULT_VALUES_3[PB_DATA_TYPE.MESSAGE]
 		data[18].state = PB_SERVICE_STATE.UNFILLED
+		__disconnect.value = DEFAULT_VALUES_3[PB_DATA_TYPE.MESSAGE]
+		data[19].state = PB_SERVICE_STATE.UNFILLED
 		__ok_response.value = OkResponseMessage.new()
 		return __ok_response.value
 	
@@ -2036,6 +2133,8 @@ class Packet:
 		data[17].state = PB_SERVICE_STATE.UNFILLED
 		__search_highscore.value = DEFAULT_VALUES_3[PB_DATA_TYPE.MESSAGE]
 		data[18].state = PB_SERVICE_STATE.UNFILLED
+		__disconnect.value = DEFAULT_VALUES_3[PB_DATA_TYPE.MESSAGE]
+		data[19].state = PB_SERVICE_STATE.UNFILLED
 		__deny_response.value = DenyResponseMessage.new()
 		return __deny_response.value
 	
@@ -2083,6 +2182,8 @@ class Packet:
 		data[17].state = PB_SERVICE_STATE.UNFILLED
 		__search_highscore.value = DEFAULT_VALUES_3[PB_DATA_TYPE.MESSAGE]
 		data[18].state = PB_SERVICE_STATE.UNFILLED
+		__disconnect.value = DEFAULT_VALUES_3[PB_DATA_TYPE.MESSAGE]
+		data[19].state = PB_SERVICE_STATE.UNFILLED
 		__player.value = PlayerMessage.new()
 		return __player.value
 	
@@ -2130,6 +2231,8 @@ class Packet:
 		data[17].state = PB_SERVICE_STATE.UNFILLED
 		__search_highscore.value = DEFAULT_VALUES_3[PB_DATA_TYPE.MESSAGE]
 		data[18].state = PB_SERVICE_STATE.UNFILLED
+		__disconnect.value = DEFAULT_VALUES_3[PB_DATA_TYPE.MESSAGE]
+		data[19].state = PB_SERVICE_STATE.UNFILLED
 		__player_direction.value = PlayerDirectionMessage.new()
 		return __player_direction.value
 	
@@ -2177,6 +2280,8 @@ class Packet:
 		data[17].state = PB_SERVICE_STATE.UNFILLED
 		__search_highscore.value = DEFAULT_VALUES_3[PB_DATA_TYPE.MESSAGE]
 		data[18].state = PB_SERVICE_STATE.UNFILLED
+		__disconnect.value = DEFAULT_VALUES_3[PB_DATA_TYPE.MESSAGE]
+		data[19].state = PB_SERVICE_STATE.UNFILLED
 		__spore.value = SporeMessage.new()
 		return __spore.value
 	
@@ -2224,6 +2329,8 @@ class Packet:
 		data[17].state = PB_SERVICE_STATE.UNFILLED
 		__search_highscore.value = DEFAULT_VALUES_3[PB_DATA_TYPE.MESSAGE]
 		data[18].state = PB_SERVICE_STATE.UNFILLED
+		__disconnect.value = DEFAULT_VALUES_3[PB_DATA_TYPE.MESSAGE]
+		data[19].state = PB_SERVICE_STATE.UNFILLED
 		__spore_consumed.value = SporeConsumedMessage.new()
 		return __spore_consumed.value
 	
@@ -2271,6 +2378,8 @@ class Packet:
 		data[17].state = PB_SERVICE_STATE.UNFILLED
 		__search_highscore.value = DEFAULT_VALUES_3[PB_DATA_TYPE.MESSAGE]
 		data[18].state = PB_SERVICE_STATE.UNFILLED
+		__disconnect.value = DEFAULT_VALUES_3[PB_DATA_TYPE.MESSAGE]
+		data[19].state = PB_SERVICE_STATE.UNFILLED
 		__spore_batch.value = SporesBatchMessage.new()
 		return __spore_batch.value
 	
@@ -2318,6 +2427,8 @@ class Packet:
 		data[17].state = PB_SERVICE_STATE.UNFILLED
 		__search_highscore.value = DEFAULT_VALUES_3[PB_DATA_TYPE.MESSAGE]
 		data[18].state = PB_SERVICE_STATE.UNFILLED
+		__disconnect.value = DEFAULT_VALUES_3[PB_DATA_TYPE.MESSAGE]
+		data[19].state = PB_SERVICE_STATE.UNFILLED
 		__player_consumed.value = PlayerConsumedMessage.new()
 		return __player_consumed.value
 	
@@ -2365,6 +2476,8 @@ class Packet:
 		data[17].state = PB_SERVICE_STATE.UNFILLED
 		__search_highscore.value = DEFAULT_VALUES_3[PB_DATA_TYPE.MESSAGE]
 		data[18].state = PB_SERVICE_STATE.UNFILLED
+		__disconnect.value = DEFAULT_VALUES_3[PB_DATA_TYPE.MESSAGE]
+		data[19].state = PB_SERVICE_STATE.UNFILLED
 		__hiscore_board_request.value = HiscoreBoardRequestMessage.new()
 		return __hiscore_board_request.value
 	
@@ -2412,6 +2525,8 @@ class Packet:
 		data[17].state = PB_SERVICE_STATE.UNFILLED
 		__search_highscore.value = DEFAULT_VALUES_3[PB_DATA_TYPE.MESSAGE]
 		data[18].state = PB_SERVICE_STATE.UNFILLED
+		__disconnect.value = DEFAULT_VALUES_3[PB_DATA_TYPE.MESSAGE]
+		data[19].state = PB_SERVICE_STATE.UNFILLED
 		__hiscore.value = HiscoreMessage.new()
 		return __hiscore.value
 	
@@ -2459,6 +2574,8 @@ class Packet:
 		data[17].state = PB_SERVICE_STATE.UNFILLED
 		__search_highscore.value = DEFAULT_VALUES_3[PB_DATA_TYPE.MESSAGE]
 		data[18].state = PB_SERVICE_STATE.UNFILLED
+		__disconnect.value = DEFAULT_VALUES_3[PB_DATA_TYPE.MESSAGE]
+		data[19].state = PB_SERVICE_STATE.UNFILLED
 		__hiscore_board.value = HiscoreBoardMessage.new()
 		return __hiscore_board.value
 	
@@ -2506,6 +2623,8 @@ class Packet:
 		data[17].state = PB_SERVICE_STATE.FILLED
 		__search_highscore.value = DEFAULT_VALUES_3[PB_DATA_TYPE.MESSAGE]
 		data[18].state = PB_SERVICE_STATE.UNFILLED
+		__disconnect.value = DEFAULT_VALUES_3[PB_DATA_TYPE.MESSAGE]
+		data[19].state = PB_SERVICE_STATE.UNFILLED
 		__finished_browsing_highscore.value = FinishedBrowsingHighscoresMessage.new()
 		return __finished_browsing_highscore.value
 	
@@ -2553,8 +2672,59 @@ class Packet:
 		__finished_browsing_highscore.value = DEFAULT_VALUES_3[PB_DATA_TYPE.MESSAGE]
 		data[17].state = PB_SERVICE_STATE.UNFILLED
 		data[18].state = PB_SERVICE_STATE.FILLED
+		__disconnect.value = DEFAULT_VALUES_3[PB_DATA_TYPE.MESSAGE]
+		data[19].state = PB_SERVICE_STATE.UNFILLED
 		__search_highscore.value = SearchHighscoreMessage.new()
 		return __search_highscore.value
+	
+	var __disconnect: PBField
+	func has_disconnect() -> bool:
+		if __disconnect.value != null:
+			return true
+		return false
+	func get_disconnect() -> DisconnectMessage:
+		return __disconnect.value
+	func clear_disconnect() -> void:
+		data[19].state = PB_SERVICE_STATE.UNFILLED
+		__disconnect.value = DEFAULT_VALUES_3[PB_DATA_TYPE.MESSAGE]
+	func new_disconnect() -> DisconnectMessage:
+		__chat_msg.value = DEFAULT_VALUES_3[PB_DATA_TYPE.MESSAGE]
+		data[2].state = PB_SERVICE_STATE.UNFILLED
+		__id_msg.value = DEFAULT_VALUES_3[PB_DATA_TYPE.MESSAGE]
+		data[3].state = PB_SERVICE_STATE.UNFILLED
+		__login_request.value = DEFAULT_VALUES_3[PB_DATA_TYPE.MESSAGE]
+		data[4].state = PB_SERVICE_STATE.UNFILLED
+		__register_request.value = DEFAULT_VALUES_3[PB_DATA_TYPE.MESSAGE]
+		data[5].state = PB_SERVICE_STATE.UNFILLED
+		__ok_response.value = DEFAULT_VALUES_3[PB_DATA_TYPE.MESSAGE]
+		data[6].state = PB_SERVICE_STATE.UNFILLED
+		__deny_response.value = DEFAULT_VALUES_3[PB_DATA_TYPE.MESSAGE]
+		data[7].state = PB_SERVICE_STATE.UNFILLED
+		__player.value = DEFAULT_VALUES_3[PB_DATA_TYPE.MESSAGE]
+		data[8].state = PB_SERVICE_STATE.UNFILLED
+		__player_direction.value = DEFAULT_VALUES_3[PB_DATA_TYPE.MESSAGE]
+		data[9].state = PB_SERVICE_STATE.UNFILLED
+		__spore.value = DEFAULT_VALUES_3[PB_DATA_TYPE.MESSAGE]
+		data[10].state = PB_SERVICE_STATE.UNFILLED
+		__spore_consumed.value = DEFAULT_VALUES_3[PB_DATA_TYPE.MESSAGE]
+		data[11].state = PB_SERVICE_STATE.UNFILLED
+		__spore_batch.value = DEFAULT_VALUES_3[PB_DATA_TYPE.MESSAGE]
+		data[12].state = PB_SERVICE_STATE.UNFILLED
+		__player_consumed.value = DEFAULT_VALUES_3[PB_DATA_TYPE.MESSAGE]
+		data[13].state = PB_SERVICE_STATE.UNFILLED
+		__hiscore_board_request.value = DEFAULT_VALUES_3[PB_DATA_TYPE.MESSAGE]
+		data[14].state = PB_SERVICE_STATE.UNFILLED
+		__hiscore.value = DEFAULT_VALUES_3[PB_DATA_TYPE.MESSAGE]
+		data[15].state = PB_SERVICE_STATE.UNFILLED
+		__hiscore_board.value = DEFAULT_VALUES_3[PB_DATA_TYPE.MESSAGE]
+		data[16].state = PB_SERVICE_STATE.UNFILLED
+		__finished_browsing_highscore.value = DEFAULT_VALUES_3[PB_DATA_TYPE.MESSAGE]
+		data[17].state = PB_SERVICE_STATE.UNFILLED
+		__search_highscore.value = DEFAULT_VALUES_3[PB_DATA_TYPE.MESSAGE]
+		data[18].state = PB_SERVICE_STATE.UNFILLED
+		data[19].state = PB_SERVICE_STATE.FILLED
+		__disconnect.value = DisconnectMessage.new()
+		return __disconnect.value
 	
 	func _to_string() -> String:
 		return PBPacker.message_to_string(data)

@@ -1,0 +1,36 @@
+[gd_scene load_steps=2 format=3 uid="uid://c8b0c7ndg7kex"]
+
+[ext_resource type="Script" uid="uid://bun0dno0jewvi" path="res://classes/login_form/login_form.gd" id="1_h5oh0"]
+
+[node name="LoginForm_tscn" type="VBoxContainer"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_h5oh0")
+
+[node name="Username" type="LineEdit" parent="."]
+layout_mode = 2
+placeholder_text = "Username"
+max_length = 20
+
+[node name="Password" type="LineEdit" parent="."]
+layout_mode = 2
+placeholder_text = "Password"
+virtual_keyboard_type = 6
+secret = true
+secret_character = "*"
+
+[node name="HBoxContainer" type="HBoxContainer" parent="."]
+layout_mode = 2
+size_flags_horizontal = 4
+size_flags_vertical = 4
+
+[node name="LoginButton" type="Button" parent="HBoxContainer"]
+layout_mode = 2
+text = "Login"
+
+[node name="HighScore" type="Button" parent="HBoxContainer"]
+layout_mode = 2
+text = "Highscores"

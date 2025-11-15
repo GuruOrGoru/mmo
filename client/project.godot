@@ -23,6 +23,7 @@ GameManager="*res://game_manager.gd"
 
 [display]
 
+window/stretch/mode="viewport"
 display_server/driver.linuxbsd="wayland"
 
 [editor_plugins]

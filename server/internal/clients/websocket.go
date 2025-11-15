@@ -183,6 +183,7 @@ func (c *WebSocketClient) WriteLoop() {
 }
 
 func (c *WebSocketClient) Close(reason string) {
+	c.Broadcast(packets.NewDisconnectMessage(reason))
 	c.logger.Printf("Closing client connection because: %s", reason)
 
 	c.SetState(nil)
@@ -195,4 +196,5 @@ func (c *WebSocketClient) Close(reason string) {
 	if _, closed := <-c.sendChan; !closed {
 		close(c.sendChan)
 	}
+
 }

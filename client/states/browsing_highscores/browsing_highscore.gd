@@ -2,11 +2,11 @@ extends Node
 
 const packets := preload("res://packets.gd")
 
-@onready var _highscores: Highscores = $UI/VBoxContainer/Highscore
-@onready var _return_to_menu: Button = $UI/VBoxContainer/HBoxContainer/BackButton
-@onready var _search_bar: LineEdit = $UI/VBoxContainer/HBoxContainer/SearchBar
-@onready var _search_button: Button = $UI/VBoxContainer/HBoxContainer/SearchButton
-@onready var _log: Log = $UI/VBoxContainer/Log
+@onready var _highscores: Highscores = $MarginContainer/VBoxContainer/Highscore
+@onready var _return_to_menu: Button = $MarginContainer/VBoxContainer/HBoxContainer/BackButton
+@onready var _search_bar: LineEdit = $MarginContainer/VBoxContainer/HBoxContainer/SearchBar
+@onready var _search_button: Button = $MarginContainer/VBoxContainer/HBoxContainer/SearchButton
+@onready var _log: Log = $MarginContainer/VBoxContainer/Log
 
 func _ready() -> void:
 	WS.packet_received.connect(_on_ws_packet_received)

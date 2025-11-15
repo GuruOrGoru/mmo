@@ -13,9 +13,9 @@ RETURNING *;
 
 -- name: CreatePlayer :one
 INSERT INTO players (
-    user_id, name
+    user_id, name, color
 ) VALUES (
-    $1, $2
+    $1, $2, $3
 )
 RETURNING *;
 

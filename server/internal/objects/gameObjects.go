@@ -12,6 +12,7 @@ type Player struct {
 	DbId          int64
 	HighScore     int64
 	SporeCooldown float64
+	Color         int32
 }
 
 type Spore struct {

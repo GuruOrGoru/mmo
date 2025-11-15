@@ -11,26 +11,28 @@ import (
 
 const createPlayer = `-- name: CreatePlayer :one
 INSERT INTO players (
-    user_id, name
+    user_id, name, color
 ) VALUES (
-    $1, $2
+    $1, $2, $3
 )
-RETURNING id, user_id, name, best_score
+RETURNING id, user_id, name, best_score, color
 `
 
 type CreatePlayerParams struct {
 	UserID int32
 	Name   string
+	Color  int32
 }
 
 func (q *Queries) CreatePlayer(ctx context.Context, arg CreatePlayerParams) (Player, error) {
-	row := q.db.QueryRowContext(ctx, createPlayer, arg.UserID, arg.Name)
+	row := q.db.QueryRowContext(ctx, createPlayer, arg.UserID, arg.Name, arg.Color)
 	var i Player
 	err := row.Scan(
 		&i.ID,
 		&i.UserID,
 		&i.Name,
 		&i.BestScore,
+		&i.Color,
 	)
 	return i, err
 }
@@ -57,7 +59,7 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 }
 
 const getPlayerById = `-- name: GetPlayerById :one
-SELECT id, user_id, name, best_score FROM players
+SELECT id, user_id, name, best_score, color FROM players
 WHERE user_id = $1
 LIMIT 1
 `
@@ -70,12 +72,13 @@ func (q *Queries) GetPlayerById(ctx context.Context, userID int32) (Player, erro
 		&i.UserID,
 		&i.Name,
 		&i.BestScore,
+		&i.Color,
 	)
 	return i, err
 }
 
 const getPlayerByName = `-- name: GetPlayerByName :one
-SELECT id, user_id, name, best_score FROM players
+SELECT id, user_id, name, best_score, color FROM players
 WHERE name LIKE $1
 LIMIT 1
 `
@@ -88,6 +91,7 @@ func (q *Queries) GetPlayerByName(ctx context.Context, name string) (Player, err
 		&i.UserID,
 		&i.Name,
 		&i.BestScore,
+		&i.Color,
 	)
 	return i, err
 }

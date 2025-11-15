@@ -58,7 +58,18 @@ func (ig *InGame) Handle(senderId uint64, msg packets.Msg) {
 		ig.handlePlayerConsumedMessage(senderId, msg)
 	case *packets.Packet_Spore:
 		ig.handleSporeMessage(senderId, msg)
+	case *packets.Packet_Disconnect:
+		ig.handleDisconnect(senderId, msg)
 	}
+}
+
+func (ig *InGame) handleDisconnect(senderId uint64, msg *packets.Packet_Disconnect) {
+	if senderId == ig.client.GetId() {
+		ig.client.Broadcast(msg)
+		ig.client.SetState(&Connected{})
+		return
+	}
+	go ig.client.SendAs(msg, senderId)
 }
 
 func (ig *InGame) handleSporeMessage(senderId uint64, msg *packets.Packet_Spore) {

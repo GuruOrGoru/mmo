@@ -36,6 +36,14 @@ func NewDenyMessage(reason string) Msg {
 	}
 }
 
+func NewDisconnectMessage(reason string) Msg {
+	return &Packet_Disconnect{
+		Disconnect: &DisconnectMessage{
+			Reason: reason,
+		},
+	}
+}
+
 func NewPlayer(id uint64, player *objects.Player) Msg {
 	return &Packet_Player{
 		Player: &PlayerMessage{
@@ -46,6 +54,7 @@ func NewPlayer(id uint64, player *objects.Player) Msg {
 			Radius:    player.Radius,
 			Direction: player.Direction,
 			Speed:     player.Speed,
+			Color:     player.Color,
 		},
 	}
 }

@@ -3,8 +3,8 @@ extends ScrollContainer
 
 var _scores: Array[int]
 
-@onready var _vbox: VBoxContainer = $VBoxContainer
-@onready var _entry_template: HBoxContainer = $VBoxContainer/HBoxContainer
+@onready var _vbox: VBoxContainer = $MarginContainer/VBoxContainer
+@onready var _entry_template: HBoxContainer = $MarginContainer/VBoxContainer/HBoxContainer
 @onready var _return_to_menu: Button = $"../HBoxContainer/ReturnToMenu"
 @onready var _highscores: Highscores = $"."
 
