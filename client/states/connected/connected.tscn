@@ -78,3 +78,8 @@ size_flags_vertical = 8
 scroll_following = true
 script = ExtResource("2_kh2bm")
 metadata/_custom_type_script = "uid://c8bxtyf0f5gc0"
+
+[node name="RichTextLabel2" type="RichTextLabel" parent="UI/MarginContainer/VBoxContainer"]
+layout_mode = 2
+text = "By siddhartha Dhakal"
+fit_content = true
